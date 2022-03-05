@@ -1,3 +1,4 @@
+from http.client import responses
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3 
@@ -130,11 +131,11 @@ def write_message():
 
     msg_id = uuid.uuid4() #not sure how to ensure uniqueness of passwords otherwise
     message_body = request.json["message_body"]
-    author_id = request.json["author_id"]
+    user_id = request.json["user_id"]
     channel_id =  request.json["channel_id"] 
     
 
-    cur.execute(f"insert into messages (msg_id, message_body, sent_time, author_id, channel_id) values ('{msg_id}', '{message_body}', datetime('now'), '{author_id}', '{channel_id}');")
+    cur.execute(f"insert into messages (msg_id, message_body, sent_time, user_id, channel_id) values ('{msg_id}', '{message_body}', datetime('now'), '{user_id}', '{channel_id}');")
     
     #need this here for the data to persist, otherwise it gets dumped
     con.commit()
@@ -154,7 +155,7 @@ def get_channels():
         - channels: {channel_id:channel_name}
     """
 
-    query = cur.execute("select * from channels order by channel_name desc;")
+    query = cur.execute("select * from channels order by channel_name asc;")
     channels = {}
     for row in query.fetchall():
 
@@ -163,18 +164,51 @@ def get_channels():
 
     return jsonify({'channels':channels})
 
+@app.route('/get-messages/<channel_id>', methods=['GET'])
+def get_messages(channel_id):
+    """
+    Gets all the messages and responses for that specific channel
+
+    Parameters
+    channel_id
+        - channel id from which to grab the messages
+
+    Returns
+    json_object
+        - channels: {channel_id:channel_name}
+    """
 
 
 
+    #prepare the query
+    query = con.execute(f"select * from v_messages where channel_id={channel_id}")
 
-
-# TODO: Create the API
-@app.route('/<id>', methods=['GET'])
-def home(id):
+    if query.rowcount == 0:
+        return jsonify({"response":"no messages yet"})
     
-    users = ['tom', 'jerry']
+    messages = {}
+    for row in query.fetchall():
+        messages[str(row[2])]={"body":row[3], "author":row[1], "time":row[4], "replies":{}}
     
-    return jsonify(users,id)
+    for i in messages.keys():
+        print(i)
+
+        replies={}
+        query = con.execute(f"select * from v_replies_user where msg_id='{i}'")
+        for row in query.fetchall():
+            replies[row[4]]= {"user_name":row[0], "reply_body":row[1], "sent_time":row[2]}
+        messages["replies"]=replies
+        
+    
+    
+
+    return jsonify({"msg":"success", "messages":messages})
+
+
+
+
+
+
 
 
 if __name__ == '__main__':

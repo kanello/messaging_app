@@ -18,11 +18,11 @@ CREATE TABLE messages (
 	msg_id int unique,
 	message_body varchar,
 	sent_time timestamp,
-	author_id varchar,
+	user_id varchar,
 	channel_id int,
     PRIMARY KEY (msg_id),
     foreign key (channel_id) references channels(channel_id),
-    foreign key (author_id) references users(user_id)
+    foreign key (user_id) references users(user_id)
 
 );
 
@@ -31,11 +31,11 @@ CREATE TABLE replies (
 	reply_id int,
     reply_body varchar,
 	sent_time timestamp,
-	message_id int,
-	author_id varchar,
+	msg_id int,
+	user_id varchar,
     PRIMARY key (reply_id),
-    foreign key (message_id) references messages(msg_id),
-    foreign key (author_id) references users(user_id)
+    foreign key (msg_id) references messages(msg_id),
+    foreign key (user_id) references users(user_id)
 
 );
 
@@ -47,3 +47,31 @@ CREATE TABLE latest_seen (
     foreign key (msg_id) references messages(msg_id)
 
 );
+
+drop view if EXISTS v_replies_user;
+create view v_replies_user as
+select     
+    u.user_name,
+    r.reply_body,
+    r.sent_time,
+    r.msg_id,
+    r.reply_id
+from users u 
+join replies r using (user_id);
+
+
+
+
+
+--this view is going to help us get organised with messages and replies
+drop view if EXISTS v_messages;
+create view v_messages as
+select 
+    u.user_id,
+    u.user_name,
+    m.msg_id,
+    m.message_body,
+    m.sent_time,
+    m.channel_id
+from users u
+join messages m using (user_id);
