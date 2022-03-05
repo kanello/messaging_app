@@ -12,9 +12,16 @@ CORS(app, resources={r"*": {"origins": "*"}})
 con = sqlite3.connect('belay.db', check_same_thread=False)
 cur = con.cursor()
 
-# cur.executescript('create_db.sql')
-# #add fake data for now | switch off when done
-# cur.executescript('.read test_data.sql')
+#create the database using script provided
+with open('create_db.sql', 'r') as f:
+    script = f.read()
+    cur.executescript(script)
+
+
+#add fake data for now | switch off when done
+with open('test_data.sql', 'r') as f:
+    script = f.read()
+    cur.executescript(script)
 
 
 
@@ -36,7 +43,8 @@ def credentials_check():
     username =  request.json["username"] 
     password =  request.json["password"] 
 
-    cur.execute(f"select user_password from users where user_name = '{username}';") #and password = '{password}'
+    #pass sanitised sql
+    cur.execute("select user_password from users where user_name = ?;", (username, ))
     outcome = cur.fetchone()
     
     #outcome for some reason is a tuple, so return only first part
@@ -63,8 +71,9 @@ def create_user():
     password =  request.json["password"] 
     user_id = uuid.uuid4() #not sure how to ensure uniqueness of passwords otherwise
 
+
     #check that user doesn't exist
-    cur.execute(f"select count(*) from users where user_name = '{username}';") 
+    cur.execute("select count(*) from users where user_name = ?;", (username,))
     outcome = cur.fetchone()
 
     #check username is "clear"
@@ -98,7 +107,7 @@ def create_channel():
     
 
     #check that user doesn't exist
-    cur.execute(f"select count(*) from channels where channel_name = '{channel_name}';") 
+    cur.execute("select count(*) from channels where channel_name = ?;", (channel_name, ))
     outcome = cur.fetchone()
 
     #check username is "clear"
@@ -209,7 +218,7 @@ def get_messages(channel_id):
 
 
     #prepare the query
-    query = con.execute(f"select * from v_messages where channel_id={channel_id}")
+    query = con.execute("select * from v_messages where channel_id=?;", (channel_id, ))
 
     if query.rowcount == 0:
         return jsonify({"response":"no messages yet"})
@@ -222,7 +231,7 @@ def get_messages(channel_id):
     for key in messages:
 
         replies={}
-        query = con.execute(f"select * from v_replies_user where msg_id='{key}'")
+        query = con.execute("select * from v_replies_user where msg_id=?;", (key, ))
         for row in query.fetchall():
             replies[row[4]]= {"user_name":row[0], "reply_body":row[1], "sent_time":row[2]}
      
