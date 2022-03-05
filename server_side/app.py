@@ -142,6 +142,35 @@ def write_message():
 
     return jsonify({"success":True, "message":f'wrote message id {msg_id}'})
     
+@app.route('/write-reply', methods=['POST'])
+def write_reply():
+    """
+    Write a reply to a message. Takes the json object passed through, autogenerates an id, timestamp and writes the reply to the database, persisting the change.
+
+    Timestamp is generated via the sql query => datetime('now')
+
+    Parameters
+    request:
+        - json object containing 
+
+    Returns
+    json object:
+        - json object containing success or fail message
+    """
+
+    reply_id = uuid.uuid4() #not sure how to ensure uniqueness of passwords otherwise
+    reply_body = request.json["reply_body"]
+    user_id = request.json["user_id"]
+    msg_id =  request.json["msg_id"] 
+    
+
+    cur.execute(f"insert into replies (reply_id, reply_body, sent_time, msg_id, user_id) values ('{reply_id}', '{reply_body}', datetime('now'), '{msg_id}', '{user_id}');")
+    
+    #need this here for the data to persist, otherwise it gets dumped
+    con.commit()
+
+    return jsonify({"success":True, "message":f'wrote reply id {reply_id}'})
+
 @app.route('/get-channels', methods=['GET'])
 def get_channels():
     """
@@ -179,7 +208,6 @@ def get_messages(channel_id):
     """
 
 
-
     #prepare the query
     query = con.execute(f"select * from v_messages where channel_id={channel_id}")
 
@@ -189,16 +217,16 @@ def get_messages(channel_id):
     messages = {}
     for row in query.fetchall():
         messages[str(row[2])]={"body":row[3], "author":row[1], "time":row[4], "replies":{}}
-    
-    for i in messages.keys():
-        print(i)
+
+    #might have to find a better way of doing this. Nested ain't a good idea    
+    for key in messages:
 
         replies={}
-        query = con.execute(f"select * from v_replies_user where msg_id='{i}'")
+        query = con.execute(f"select * from v_replies_user where msg_id='{key}'")
         for row in query.fetchall():
             replies[row[4]]= {"user_name":row[0], "reply_body":row[1], "sent_time":row[2]}
-        messages["replies"]=replies
-        
+     
+        messages[key]["replies"]=replies
     
     
 
