@@ -1,9 +1,8 @@
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
-	user_id varchar unique,
+	user_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	user_name varchar unique,
-	user_password varchar,
-    PRIMARY KEY(user_id) 
+	user_password varchar 
 );
 
 DROP TABLE IF EXISTS channels;

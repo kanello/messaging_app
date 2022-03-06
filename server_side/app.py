@@ -69,7 +69,7 @@ def create_user():
 
     username =  request.json["username"] 
     password =  request.json["password"] 
-    user_id = uuid.uuid4() #not sure how to ensure uniqueness of passwords otherwise
+    # user_id = uuid.uuid4() #not sure how to ensure uniqueness of passwords otherwise
 
 
     #check that user doesn't exist
@@ -79,7 +79,7 @@ def create_user():
     #check username is "clear"
     if outcome[0] == 0:
 
-        cur.execute(f"insert into users (user_id, user_name, user_password) values ('{user_id}', '{username}', '{password}');")
+        cur.execute(f"insert into users (user_name, user_password) values ('{username}', '{password}');")
         
         #need this here for the data to persist, otherwise it gets dumped
         con.commit()
@@ -194,13 +194,16 @@ def get_channels():
     """
 
     query = cur.execute("select * from channels order by channel_name asc;")
-    channels = {}
+    channels = []
     for row in query.fetchall():
-
-        channels[str(row[0])]=row[1]
+        new_channel={
+            "chanel_id":str(row[0]),
+            "channel_name":row[1]
+        }
+        channels.append(new_channel)
         
 
-    return jsonify({'channels':channels})
+    return jsonify(channels)
 
 @app.route('/get-messages/<channel_id>', methods=['GET'])
 def get_messages(channel_id):
@@ -218,28 +221,35 @@ def get_messages(channel_id):
 
 
     #prepare the query
-    query = con.execute("select * from v_messages where channel_id=?;", (channel_id, ))
+    query = con.execute("select * from v_messages where channel_id=?;", (str(channel_id), ))
 
     if query.rowcount == 0:
         return jsonify({"response":"no messages yet"})
     
-    messages = {}
+    messages = []
     for row in query.fetchall():
-        messages[str(row[2])]={"body":row[3], "author":row[1], "time":row[4], "replies":{}}
+        new_message = {"msg_id": str(row[2]), "body":row[3], "author":row[1], "time":row[4], "replies":[]}
+        print(new_message)
+        messages.append(new_message)
 
+    print(messages)
     #might have to find a better way of doing this. Nested ain't a good idea    
-    for key in messages:
-
-        replies={}
-        query = con.execute("select * from v_replies_user where msg_id=?;", (key, ))
+    for message in messages:
+        # print(message)
+      
+        query = con.execute("select * from v_replies_user where msg_id=?;", (message["msg_id"], ))
+        
         for row in query.fetchall():
-            replies[row[4]]= {"user_name":row[0], "reply_body":row[1], "sent_time":row[2]}
+            new_reply={"reply_id":row[4], "user_name":row[0], "reply_body":row[1], "sent_time":row[2]}
+            print(new_reply)
+            message["replies"].append(new_reply)
+            print(message)
      
-        messages[key]["replies"]=replies
+        # messages[message]["replies"]=replies
     
     
 
-    return jsonify({"msg":"success", "messages":messages})
+    return jsonify(messages)
 
 
 

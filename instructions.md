@@ -1,0 +1,1 @@
+- run `create_db.sql` to create the database
