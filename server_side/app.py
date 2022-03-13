@@ -12,16 +12,16 @@ CORS(app, resources={r"*": {"origins": "*"}})
 con = sqlite3.connect('belay.db', check_same_thread=False)
 cur = con.cursor()
 
-#create the database using script provided
-with open('create_db.sql', 'r') as f:
-    script = f.read()
-    cur.executescript(script)
+# #create the database using script provided
+# with open('create_db.sql', 'r') as f:
+#     script = f.read()
+#     cur.executescript(script)
 
 
-#add fake data for now | switch off when done
-with open('test_data.sql', 'r') as f:
-    script = f.read()
-    cur.executescript(script)
+# #add fake data for now | switch off when done
+# with open('test_data.sql', 'r') as f:
+#     script = f.read()
+#     cur.executescript(script)
 
 
 
@@ -197,13 +197,23 @@ def get_channels():
     channels = []
     for row in query.fetchall():
         new_channel={
-            "chanel_id":str(row[0]),
+            "channel_id":str(row[0]),
             "channel_name":row[1]
         }
         channels.append(new_channel)
         
-
     return jsonify(channels)
+
+@app.route('/get-channel/<id>', methods=['GET'])
+def get_channel_name(id):
+
+    query = cur.execute(f"select channel_name from channels where channel_id={id}")
+    for row in query.fetchall():
+        data = row[0]
+
+    print(data)
+    
+    return jsonify(data)
 
 @app.route('/get-messages/<channel_id>', methods=['GET'])
 def get_messages(channel_id):
@@ -250,12 +260,6 @@ def get_messages(channel_id):
     
 
     return jsonify(messages)
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

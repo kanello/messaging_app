@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "concurrently": "^7.0.0"
+  },
+  "scripts": {
+    "dev": "concurrently \"cd server_side && conda run -n base --no-capture-output --live-stream python /Users/anthony/Documents/GitHub/final_project/server_side/app.py \" \" cd client && npm start\""
+  }
+}
