@@ -113,7 +113,7 @@ def create_channel():
     #check username is "clear"
     if outcome[0] == 0:
 
-        cur.execute(f"insert into channels (channel_id, channel_name) values ('{channel_id}', '{channel_name}');")
+        cur.execute(f"""insert into channels (channel_id, channel_name) values ("{channel_id}", "{channel_name}");""")
         
         #need this here for the data to persist, otherwise it gets dumped
         con.commit()
@@ -207,7 +207,7 @@ def get_channels():
 @app.route('/get-channel/<id>', methods=['GET'])
 def get_channel_name(id):
 
-    query = cur.execute(f"select channel_name from channels where channel_id={id}")
+    query = cur.execute(f'select channel_name from channels where channel_id="{id}"')
     for row in query.fetchall():
         data = row[0]
 
@@ -239,10 +239,10 @@ def get_messages(channel_id):
     messages = []
     for row in query.fetchall():
         new_message = {"msg_id": str(row[2]), "body":row[3], "author":row[1], "time":row[4], "replies":[]}
-        print(new_message)
+        # print(new_message)
         messages.append(new_message)
 
-    print(messages)
+    # print(messages)
     #might have to find a better way of doing this. Nested ain't a good idea    
     for message in messages:
         # print(message)
@@ -251,9 +251,9 @@ def get_messages(channel_id):
         
         for row in query.fetchall():
             new_reply={"reply_id":row[4], "user_name":row[0], "reply_body":row[1], "sent_time":row[2]}
-            print(new_reply)
+            # print(new_reply)
             message["replies"].append(new_reply)
-            print(message)
+            # print(message)
      
         # messages[message]["replies"]=replies
     
@@ -261,6 +261,19 @@ def get_messages(channel_id):
 
     return jsonify(messages)
 
+@app.route('/get-replies/<message_id>', methods=['GET'])
+def get_replies(message_id):
+    """
+    """
+
+    #request the database for the replies to the messages given
+    query = cur.execute(f'select reply_body, sent_time, user_name from v_replies_user where msg_id="{message_id}"')
+
+    replies = []
+    for row in query.fetchall():
+        replies.append({"reply_body":row[0], "sent_time":row[1], "author":row[2]})
+    
+    return jsonify(replies)
 
 if __name__ == '__main__':
     app.run()
