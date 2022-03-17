@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3 
 import uuid
+import re
 
 
 app = Flask(__name__)
@@ -23,6 +24,11 @@ cur = con.cursor()
 #     script = f.read()
 #     cur.executescript(script)
 
+def check_if_img(text):
+    """Reads text. If image url detected, returns the image link
+    """
+
+    return re.findall(r'(?:http\:|https\:)?\/\/.*\.(?:png|jpg)', text)
 
 
 @app.route('/credentials-check', methods=['POST'])
@@ -171,6 +177,8 @@ def write_reply():
     reply_body = request.json["reply_body"]
     user_id = request.json["user_id"]
     msg_id =  request.json["msg_id"] 
+
+    print(reply_body, user_id, msg_id)
     
 
     cur.execute(f"insert into replies (reply_id, reply_body, sent_time, msg_id, user_id) values ('{reply_id}', '{reply_body}', datetime('now'), '{msg_id}', '{user_id}');")
@@ -238,14 +246,14 @@ def get_messages(channel_id):
     
     messages = []
     for row in query.fetchall():
-        new_message = {"msg_id": str(row[2]), "body":row[3], "author":row[1], "time":row[4], "replies":[]}
+        new_message = {"msg_id": str(row[2]), "body":row[3], "author":row[1], "time":row[4], "replies":[], "images":check_if_img(row[3])}
         # print(new_message)
         messages.append(new_message)
 
     # print(messages)
     #might have to find a better way of doing this. Nested ain't a good idea    
     for message in messages:
-        # print(message)
+        
       
         query = con.execute("select * from v_replies_user where msg_id=?;", (message["msg_id"], ))
         
@@ -253,9 +261,7 @@ def get_messages(channel_id):
             new_reply={"reply_id":row[4], "user_name":row[0], "reply_body":row[1], "sent_time":row[2]}
             # print(new_reply)
             message["replies"].append(new_reply)
-            # print(message)
-     
-        # messages[message]["replies"]=replies
+            
     
     
 
