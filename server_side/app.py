@@ -1,19 +1,21 @@
-from http.client import responses
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import sqlite3 
-import uuid
 import re
 import bcrypt
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token
 
 
 
 app = Flask(__name__)
+app.config["JWT_SECRET_KEY"]='secret-key'
 CORS(app, resources={r"*": {"origins": "*"}})
 
 #create database connection and create user tables
 con = sqlite3.connect('belay.db', check_same_thread=False)
 cur = con.cursor()
+jwt = JWTManager(app)
+
 
 
 def check_if_img(text):
@@ -40,14 +42,14 @@ def credentials_check():
 
     username =  request.json["username"] 
     password =  request.json["password"] 
-    # hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
     #pass sanitised sql
-    cur.execute("select user_password from users where user_name = ?;", (username, ))
+    cur.execute("select user_password, user_id from users where user_name = ?;", (username, ))
     outcome = cur.fetchone()
+    access_token = create_access_token(identity=outcome[1])
  
     if bcrypt.checkpw(password.encode('utf-8'), outcome[0].encode('utf-8')):
-        return jsonify({"success":True, "message":f'Logged in, welcome back {username}'})
+        return jsonify({"success":True, "message":f'Logged in, welcome back {username}', "user":username, "id":outcome[1], "token":access_token})
 
     return jsonify({"success":False, "message":f'user and pass combo not correct'})
 
@@ -72,6 +74,7 @@ def create_user():
     #check that user doesn't exist
     cur.execute("select count(*) from users where user_name = ?;", (username,))
     outcome = cur.fetchone()
+    
 
     #check username is "clear"
     if outcome[0] == 0:
@@ -81,11 +84,17 @@ def create_user():
         #need this here for the data to persist, otherwise it gets dumped
         con.commit()
 
-        return jsonify({"success":True, "message":f'Successfully created {username}'})
+        cur.execute("select user_id from users order by 1 desc limit 1")
+        outcome = cur.fetchone()
+        access_token = create_access_token(identity=outcome[0])
+
+        return jsonify({"success":True, "message":f'Successfully created {username}', "token":access_token, "id":outcome[0]})
     
     return jsonify({"success":False, "message":f'{username} is taken'})
-        
+
+
 @app.route('/create-channel', methods=['POST'])
+@jwt_required()
 def create_channel():
     """
     Create channel
@@ -99,7 +108,6 @@ def create_channel():
         - json object containing success or fail message
     """
 
-    # channel_id = uuid.uuid4() #not sure how to ensure uniqueness of passwords otherwise
     channel_name =  request.json["channel_name"] 
     
 
@@ -135,7 +143,6 @@ def write_message():
         - json object containing success or fail message
     """
 
-    msg_id = uuid.uuid4() #not sure how to ensure uniqueness of passwords otherwise
     message_body = request.json["message_body"]
     user_id = request.json["user_id"]
     channel_id =  request.json["channel_id"] 
@@ -164,7 +171,6 @@ def write_reply():
         - json object containing success or fail message
     """
 
-    reply_id = uuid.uuid4() #not sure how to ensure uniqueness of passwords otherwise
     reply_body = request.json["reply_body"]
     user_id = request.json["user_id"]
     msg_id =  request.json["msg_id"] 
