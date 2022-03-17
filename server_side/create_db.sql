@@ -7,19 +7,19 @@ CREATE TABLE users (
 
 DROP TABLE IF EXISTS channels;
 CREATE TABLE channels (
-	channel_id int unique,
-	channel_name varchar unique,
-    PRIMARY KEY (channel_id)
+	channel_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	channel_name varchar unique
+    -- PRIMARY KEY (channel_id)
 );
 
 DROP TABLE IF EXISTS messages;
 CREATE TABLE messages (
-	msg_id int unique,
+	msg_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	message_body varchar,
 	sent_time timestamp,
 	user_id varchar,
 	channel_id int,
-    PRIMARY KEY (msg_id),
+    -- PRIMARY KEY (msg_id),
     foreign key (channel_id) references channels(channel_id),
     foreign key (user_id) references users(user_id)
 
@@ -27,12 +27,12 @@ CREATE TABLE messages (
 
 DROP TABLE IF EXISTS replies;
 CREATE TABLE replies (
-	reply_id int,
+	reply_id INTEGER PRIMARY KEY AUTOINCREMENT,
     reply_body varchar,
 	sent_time timestamp,
 	msg_id int,
 	user_id varchar,
-    PRIMARY key (reply_id),
+    -- PRIMARY key (reply_id),
     foreign key (msg_id) references messages(msg_id),
     foreign key (user_id) references users(user_id)
 
