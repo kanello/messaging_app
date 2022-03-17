@@ -259,8 +259,6 @@ def get_messages(channel_id):
             message["replies"].append(new_reply)
             
     
-    
-
     return jsonify(messages)
 
 @app.route('/get-replies/<message_id>', methods=['GET'])
