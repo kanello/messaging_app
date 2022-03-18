@@ -92,7 +92,6 @@ def create_user():
     
     return jsonify({"success":False, "message":f'{username} is taken'})
 
-
 @app.route('/create-channel', methods=['POST'])
 @jwt_required()
 def create_channel():
@@ -128,6 +127,7 @@ def create_channel():
     return jsonify({"success":False, "message":f'{channel_name} is taken'})
         
 @app.route('/write-message', methods=['POST'])
+@jwt_required()
 def write_message():
     """
     Write message. Takes the json object passed through, autogenerates an id, timestamp and writes the message to the database, persisting the change.
@@ -156,6 +156,7 @@ def write_message():
     return jsonify({"success":True, "message":f'wrote message'})
     
 @app.route('/write-reply', methods=['POST'])
+@jwt_required()
 def write_reply():
     """
     Write a reply to a message. Takes the json object passed through, autogenerates an id, timestamp and writes the reply to the database, persisting the change.
@@ -177,7 +178,6 @@ def write_reply():
 
     print(reply_body, user_id, msg_id)
     
-
     cur.execute(f"insert into replies (reply_body, sent_time, msg_id, user_id) values ('{reply_body}', datetime('now'), '{msg_id}', '{user_id}');")
     
     #need this here for the data to persist, otherwise it gets dumped
@@ -186,6 +186,7 @@ def write_reply():
     return jsonify({"success":True, "message":f'wrote reply'})
 
 @app.route('/get-channels', methods=['GET'])
+@jwt_required()
 def get_channels():
     """
     Gets all the available channels from the database and returns them as a json object
@@ -197,7 +198,7 @@ def get_channels():
     json_object
         - channels: {channel_id:channel_name}
     """
-
+    print('getting')
     query = cur.execute("select * from channels order by channel_name asc;")
     channels = []
     for row in query.fetchall():
@@ -210,6 +211,7 @@ def get_channels():
     return jsonify(channels)
 
 @app.route('/get-channel/<id>', methods=['GET'])
+@jwt_required()
 def get_channel_name(id):
 
     query = cur.execute(f'select channel_name from channels where channel_id="{id}"')
@@ -221,6 +223,7 @@ def get_channel_name(id):
     return jsonify(data)
 
 @app.route('/get-messages/<channel_id>', methods=['GET'])
+@jwt_required()
 def get_messages(channel_id):
     """
     Gets all the messages and responses for that specific channel
@@ -268,6 +271,7 @@ def get_messages(channel_id):
     return jsonify(messages)
 
 @app.route('/get-replies/<message_id>', methods=['GET'])
+@jwt_required()
 def get_replies(message_id):
     """
     """
