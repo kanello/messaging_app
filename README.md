@@ -23,6 +23,7 @@
 - in second terminal
 - `cd client` then run `npm start`
 - Run React `npm run`
+- React will be at `http://127.0.0.1:3000/`
 
 ---
 
