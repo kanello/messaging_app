@@ -287,6 +287,5 @@ def get_replies(message_id):
 
 
 
-    app.run()
 if __name__ == '__main__':
     app.run()
